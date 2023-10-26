@@ -159,7 +159,6 @@ public class ContentionSimulation {
         numberOfWorkers = Integer.parseInt(cmd.getOptionValue("numberOfWorkers"));
         seconds = Integer.parseInt(cmd.getOptionValue("seconds"));
         isSelectForUpdate = cmd.hasOption("selectForUpdate");
-        isSetPriority = cmd.hasOption("setPriority");
     }
 
     private static void setupDatabasePool() {
