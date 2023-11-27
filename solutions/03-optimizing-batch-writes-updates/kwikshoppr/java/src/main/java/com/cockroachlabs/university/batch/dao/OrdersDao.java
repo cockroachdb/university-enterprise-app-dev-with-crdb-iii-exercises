@@ -1,28 +1,12 @@
 package com.cockroachlabs.university.batch.dao;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.jdbi.v3.sqlobject.customizer.BindBean;
-import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
 import org.jdbi.v3.sqlobject.statement.SqlBatch;
-import org.jdbi.v3.sqlobject.statement.SqlQuery;
 import org.jdbi.v3.sqlobject.statement.SqlUpdate;
 
 import com.cockroachlabs.university.batch.domain.Order;
-
-/**INSERT INTO items(
-    name,
-    description,
-    quantity,
-    price
-) values (
- :name,
- :description,
- :quantity,
- :price
- ) */
-
 
 public interface OrdersDao {
     
