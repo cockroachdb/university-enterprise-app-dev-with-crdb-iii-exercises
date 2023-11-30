@@ -108,12 +108,5 @@ public class AbstractBatchTest {
     protected Order updateOrderStatus(Order order) {
         return Order.builder().id(order.getId()).cart_id(order.getCart_id()).status("processed").build();
     }
-
    
-
-    
-
-
-
-    
 }

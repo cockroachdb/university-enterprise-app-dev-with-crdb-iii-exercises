@@ -97,52 +97,5 @@ public class TestArrayBindingBulkUpdates extends AbstractBatchTest {
                     });
                 });
     }
-
-    @ParameterizedTest
-    @org.junit.jupiter.api.Order(4)
-    @ValueSource(ints = {1000, 2000, 10000 })
-    public void testInsertOrders_WithParallelPartitionedBatch(int batchSize) {
-
-        loadOrdersTable(batchSize);
-        log.info("testInsertOrders_WithParallelPartitionedBatch loaded order data");
-
-        final List<Order> ordersToUpdate = new ArrayList<>(); 
-        
-        ordersDao.getOrdersAsStream(
-                stream -> stream.forEach(ordersToUpdate::add));
-        log.info("testInsertOrders_WithParallelPartitionedBatch loaded orders to update list");
-
-        String sql = "UPDATE orders SET status=data_table.new_status "
-                                    + "FROM (select unnest(:id) as id, unnest(:new_status) as new_status) as data_table "
-                                    + "WHERE orders.id=data_table.id";
-
-
-        Timer.timeExecution("testUpdateOrders_ArrayBindingWithParallelPartitionedBatch with batch size: " + batchSize,
-                () -> {
-
-                    Lists.partition(ordersToUpdate, PARTITION_SIZE).parallelStream().forEach(batch -> {
-
-                        List<String> status = new ArrayList<>();
-                        List<UUID> ids = new ArrayList<>();
-
-                        jdbi.useHandle(handle -> {
-                            PreparedBatch preparedBatch = handle.prepareBatch(sql); 
-                            
-                            batch.forEach(
-                                    o -> {
-                                        status.add("processed");
-                                        ids.add(o.getId());
-                                    });
-
-                            preparedBatch.bindArray("id", UUID.class, ids.toArray())
-                                    .bindArray("new_status", String.class, status.toArray());
-
-                            preparedBatch.execute();
-                        });
-                    });
-
-                });
-
-    }
     
 }
