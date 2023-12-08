@@ -32,26 +32,6 @@ public class AbstractBatchTest {
 
     protected static int PARTITION_SIZE = 1000;
 
-    protected Order updateOrderStatus(Order order) {
-        return Order.builder().id(order.getId()).cart_id(order.getCart_id()).status("processed").build();
-    }
-
-    protected Order createNewOrder(){
-        
-        return Order.builder().id(UUID.randomUUID()).cart_id(UUID.randomUUID()).status("new").build(); 
-       
-    }
-
-    protected void loadOrdersTable(int batchSize){
-        final List<Order> orders = new ArrayList<Order>();
-
-        IntStream.range(0, batchSize).forEach( i -> {
-            orders.add(createNewOrder());
-        });
-
-        ordersDao.bulkInsert(orders);
-    }
-
     protected static void setupDatabasePool() {
         try {
             File configFile = new File("target/application.properties");
@@ -77,13 +57,24 @@ public class AbstractBatchTest {
         config.setPassword(dbPassword);
         config.setMaximumPoolSize(20);
         ds = new HikariDataSource(config);
+        
+    }
 
+    protected static void configureJdbi() {
         // Wrap the HikariDataSource in JDBI:
         jdbi = Jdbi.create(ds);
         jdbi.installPlugin(new SqlObjectPlugin());
+
+        jdbi.registerRowMapper(Order.class,
+            (rs, ctx) -> {
+                return Order.builder()
+                .id(UUID.fromString(rs.getString("id")))
+                .cart_id(UUID.fromString(rs.getString("cart_id")))
+                .status(rs.getString("status")).build();
+            });
     }
 
-    protected static void setupDatabase() {
+    protected static void initDatabase() {
         jdbi.useHandle(handle -> {
             handle.execute("CREATE TABLE IF NOT EXISTS orders (id UUID PRIMARY KEY DEFAULT gen_random_uuid (), cart_id UUID, status STRING)");
             handle.execute("DELETE FROM orders");
@@ -99,4 +90,23 @@ public class AbstractBatchTest {
         // Close the connection pool
         ds.close();
     }
+
+    protected void loadOrdersTable(int batchSize){
+        final List<Order> orders = new ArrayList<Order>();
+
+        IntStream.range(0, batchSize).forEach( i -> {
+            orders.add(createNewOrder());
+        });
+
+        ordersDao.bulkInsert(orders);
+    }
+
+    protected Order createNewOrder(){ 
+        return Order.builder().id(UUID.randomUUID()).cart_id(UUID.randomUUID()).status("new").build();  
+    }
+
+    protected Order updateOrderStatus(Order order) {
+        return Order.builder().id(order.getId()).cart_id(order.getCart_id()).status("processed").build();
+    }
+   
 }

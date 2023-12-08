@@ -17,21 +17,23 @@ import com.cockroachlabs.university.batch.domain.Order;
 import com.google.common.collect.Lists;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestBatchInsertsWithKeySplitting extends AbstractBatchTest {
+public class TestReWriteBatchInserts extends AbstractBatchTest {
 
-     @BeforeAll
-    void setUp() {
+    @BeforeAll
+    public void setUp() {
         setupDatabasePool();
+        configureJdbi();
+        
         ordersDao = jdbi.onDemand(OrdersDao.class);
     }
 
     @BeforeEach
-    void setUpDatabase(){
-        setupDatabase();
+    public void setUpDatabase(){
+        initDatabase();
     }
 
     @AfterAll
-    void tearDown() {
+    public void tearDown() {
         tearDownDatabase();
     }
 
@@ -61,27 +63,9 @@ public class TestBatchInsertsWithKeySplitting extends AbstractBatchTest {
             ordersDao.bulkInsert(orders);
         });
     }
-    
+
     @ParameterizedTest
     @org.junit.jupiter.api.Order(3)
-    @ValueSource(ints = { 2000, 3000, 10000})
-    public void testInsertOrders_WithPartitionedBatch(int batchSize){
-        final List<Order> orders = new ArrayList<Order>();
-
-        IntStream.range(0, batchSize).forEach( i -> {
-            orders.add(createNewOrder());
-        });
-
-        Timer.timeExecution("testInsertOrders_WithPartitionedBatch with batch size : " + batchSize,
-        () -> {
-            Lists.partition(orders, PARTITION_SIZE).forEach( batch -> {
-                ordersDao.bulkInsert(batch);
-            });
-        });
-    }
-
-    @ParameterizedTest
-    @org.junit.jupiter.api.Order(4)
     @ValueSource(ints = { 2000, 3000, 10000})
     public void testInsertOrders_WithParallelPartitionedBatch(int batchSize){
         final List<Order> orders = new ArrayList<Order>();

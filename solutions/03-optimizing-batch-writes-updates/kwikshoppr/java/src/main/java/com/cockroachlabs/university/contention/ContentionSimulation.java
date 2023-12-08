@@ -1,12 +1,10 @@
 package com.cockroachlabs.university.contention;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Properties;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;

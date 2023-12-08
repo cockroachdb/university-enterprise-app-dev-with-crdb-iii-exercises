@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import org.jdbi.v3.core.statement.PreparedBatch;
 import org.junit.jupiter.api.AfterAll;
@@ -16,40 +15,45 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import com.cockroachlabs.university.batch.dao.OrdersDao;
 import com.cockroachlabs.university.batch.domain.Order;
+import com.google.common.collect.Lists;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class TestArrayBindingBulkUpdates extends AbstractBatchTest{
+public class TestArrayBindingBulkUpdates extends AbstractBatchTest {
     @BeforeAll
-    void setUp() {
+    public void setUp() {
         setupDatabasePool();
+        configureJdbi();
+
         ordersDao = jdbi.onDemand(OrdersDao.class);
     }
 
     @BeforeEach
-    void setUpDatabase(){
-        setupDatabase();
+    public void setUpDatabase() {
+        initDatabase();
     }
 
     @AfterAll
-    void tearDown() {
+    public void tearDown() {
         tearDownDatabase();
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 1000, 2000, 10000})
-    public void testUpdateOrders_WithSingleBatch(int batchSize){
-        final List<Order> orders = new ArrayList<Order>();
+    @ValueSource(ints = { 1000, 2000, 10000 })
+    public void testUpdateOrders_WithSingleBatch(int batchSize) {
+        loadOrdersTable(batchSize);
 
-        IntStream.range(0, batchSize).forEach( i -> {
-            orders.add(createNewOrder());
-        });
+        final List<Order> ordersToUpdate = new ArrayList<>(); 
+        
+        ordersDao.getOrdersAsStream(
+                stream -> stream.forEach(ordersToUpdate::add));
 
-        ordersDao.bulkInsert(orders);
-
-        final List<Order> updatedOrders = orders
-        .stream()
-        .map(this::updateOrderStatus)
-        .collect(Collectors.toList());
+        final List<Order> updatedOrders = ordersToUpdate
+                .stream()
+                .map(this::updateOrderStatus)
+                .collect(Collectors.toList());
 
         Timer.timeExecution("testUpdateOrders_WithSingleBatch with batch size: " + batchSize,
                 () -> {
@@ -58,40 +62,40 @@ public class TestArrayBindingBulkUpdates extends AbstractBatchTest{
     }
 
     @ParameterizedTest
-    @ValueSource(ints = { 1000, 2000, 10000})
-    public void testUpdateOrders_ArrayBindingWithSingleBatch(int batchSize){
-        final List<Order> orders = new ArrayList<Order>();
+    @ValueSource(ints = { 1000, 2000, 10000 })
+    public void testUpdateOrders_ArrayBindingWithSingleBatch(int batchSize) {
+        loadOrdersTable(batchSize);
 
-        IntStream.range(0, batchSize).forEach( i -> {
-            orders.add(createNewOrder());
-        });
-
-        ordersDao.bulkInsert(orders);
+        final List<Order> ordersToUpdate = new ArrayList<>(); 
+        
+        ordersDao.getOrdersAsStream(
+                stream -> stream.forEach(ordersToUpdate::add));
 
         Timer.timeExecution("testUpdateOrders_ArrayBindingWithSingleBatch with batch size: " + batchSize,
-        () -> {
-            jdbi.useHandle(handle -> {
+                () -> {
+                    jdbi.useHandle(handle -> {
 
-                String sql = "UPDATE orders SET status=data_table.new_status "
-                            +"FROM (select unnest(:id) as id, unnest(:new_status) as new_status) as data_table "
-                            + "WHERE orders.id=data_table.id";   
-                            
-                PreparedBatch preparedBatch = handle.prepareBatch(sql);
+                        String sql = "UPDATE orders SET status=data_table.new_status "
+                                + "FROM (select unnest(:id) as id, unnest(:new_status) as new_status) as data_table "
+                                + "WHERE orders.id=data_table.id";
 
-                List<String> status = new ArrayList<>();
-                List<UUID> ids = new ArrayList<>();
+                        PreparedBatch preparedBatch = handle.prepareBatch(sql);
 
-                orders.forEach(
-                    o -> {
-                        status.add("processed");
-                        ids.add(o.getId());
+                        List<String> status = new ArrayList<>();
+                        List<UUID> ids = new ArrayList<>();
+
+                        ordersToUpdate.forEach(
+                                o -> {
+                                    status.add("processed");
+                                    ids.add(o.getId());
+                                });
+
+                        preparedBatch.bindArray("id", UUID.class, ids.toArray())
+                                .bindArray("new_status", String.class, status.toArray());
+
+                        preparedBatch.execute();
                     });
-
-                preparedBatch.bindArray("id", UUID.class, ids.toArray())
-                    .bindArray("new_status", String.class, status.toArray());
-                
-                preparedBatch.execute();
                 });
-        });
     }
+    
 }
