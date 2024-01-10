@@ -16,6 +16,9 @@ import com.cockroachlabs.university.batch.dao.OrdersDao;
 import com.cockroachlabs.university.batch.domain.Order;
 import com.google.common.collect.Lists;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestReWriteBatchInserts extends AbstractBatchTest {
 
@@ -76,9 +79,8 @@ public class TestReWriteBatchInserts extends AbstractBatchTest {
 
         Timer.timeExecution("testInsertOrders_WithParallelPartitionedBatch with batch size : " + batchSize,
         () -> {
-            Lists.partition(orders, PARTITION_SIZE).parallelStream().forEach( batch -> {
-                ordersDao.bulkInsert(batch);
-            });
+            log.info("Run partitioned batch");
+            //TODO: process as partitioned batches
         });  
     }
 }
