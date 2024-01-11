@@ -1,5 +1,7 @@
 package com.cockroachlabs.university.batch;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -74,6 +76,8 @@ public class TestArrayBindingBulkUpdates extends AbstractBatchTest {
         Timer.timeExecution("testUpdateOrders_ArrayBindingWithSingleBatch with batch size: " + batchSize,
                 () -> {
                     jdbi.useHandle(handle -> {
+
+                        fail("Complete the (2) TODO tasks then remove this fail line");
 
                         //TODO: Update SQL query string
                         String sql = "";
