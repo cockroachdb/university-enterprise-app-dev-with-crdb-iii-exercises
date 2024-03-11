@@ -11,8 +11,7 @@
 set -euo pipefail
 
 if [[ "$UID" == "0" ]]; then
-  echo "Don't run this command as root." >&1
-  exit 2
+  echo "WARNING: Don't run this command as root outside of the Virtual Developer Sandbox (Instruqt)" >&1
 fi
 
 name=${1:-""}
